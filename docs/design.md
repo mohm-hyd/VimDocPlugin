@@ -1,392 +1,218 @@
-
-# VimDoc Plugin — Initial Design Notes
+Updated Design Notes
+# VimDoc Plugin — Design Notes
 
 ## Project Goal
 
-Create a Neovim/Vim plugin that allows users to access external library documentation from inside Vim using the normal Vim help system.
+Create a Neovim/Vim plugin that allows users to access external library documentation from inside Vim using a Vim help-style workflow.
 
-The idea is not to replace existing documentation websites, but to bring documentation into the editor workflow.
+The goal is not to replace documentation websites, but to integrate external documentation into the editor workflow.
 
-Example goal:
+Example:
 
-```
+```vim
 :help love.physics
-```
 
-should be able to open generated documentation for the LÖVE 2D library.
+should eventually be able to open generated documentation for the LÖVE 2D library.
 
----
+Initial Use Case: LÖVE 2D Documentation
 
-# Initial Use Case: LÖVE 2D Documentation
-
-The first documentation source to support will be the LÖVE 2D wiki.
+The first documentation source is the LÖVE 2D wiki.
 
 Source:
 
-```
 https://love2d.org/wiki/
-```
 
-The wiki is powered by:
+The wiki uses:
 
-* MediaWiki
-* Semantic MediaWiki extension
+MediaWiki
+Semantic MediaWiki
 
-The documentation is not stored directly in the GitHub repository. It exists on the wiki.
+The documentation is hosted on the wiki rather than stored directly in the GitHub repository.
 
----
+Documentation Retrieval
+MediaWiki APIs
 
-# Documentation Retrieval
+MediaWiki provides several APIs that expose different parts of the wiki.
 
-## MediaWiki API
+Currently investigated:
 
-MediaWiki provides public APIs for retrieving wiki content.
+MediaWiki REST API
+MediaWiki Action API
 
-Important endpoint:
+The current idea is that multiple APIs may be used together rather than relying on a single endpoint.
 
-```
+API Investigation
+1. MediaWiki REST API
+
+Example endpoint:
+
+https://love2d.org/w/rest.php
+
+The REST API provides higher-level operations.
+
+Potential uses:
+
+Searching pages by title
+Finding documentation pages from user input
+Autocomplete suggestions
+
+Example workflow:
+
+User input:
+love.physics.newBody
+
+        |
+        v
+
+REST API searches for matching page
+
+        |
+        v
+
+Returns:
+love.physics page
+2. MediaWiki Action API
+
+Example endpoint:
+
 https://love2d.org/w/api.php
-```
 
-Pages are retrieved using the page title.
+The Action API provides lower-level access to wiki data.
 
-Example:
+Potential uses:
 
-```
-page=love.physics
-```
-
-means:
-
-```
-https://love2d.org/wiki/love.physics
-```
-
-The page parameter is not a class name or API object. It is simply the MediaWiki page title.
-
----
-
-# Possible Retrieval Methods Investigated
-
-## 1. Parse API (HTML)
+Retrieving raw page content
+Retrieving wikitext
+Querying page metadata
 
 Example:
 
-```
-action=parse
-page=love.physics
-prop=text
-format=json
-```
-
-Returns rendered HTML.
-
-Example output:
-
-```html
-<h2>Functions</h2>
-<table>
-...
-</table>
-```
-
-### Pros
-
-* MediaWiki already processes templates
-* Links are resolved
-* Semantic MediaWiki output is generated
-
-### Cons
-
-* Requires HTML → Vim help conversion
-* Generated HTML contains lots of unnecessary markup
-* Harder to control formatting
-
-Decision:
-
-Not preferred for MVP.
-
----
-
-## 2. Raw / Revision Content (Chosen)
-
-Use the revisions API to retrieve the original wiki source.
-
-Example:
-
-```
 action=query
 prop=revisions
 rvprop=content
 titles=love.physics
-```
 
-Returns wikitext:
+Possible returned data:
 
-Example:
-
-```
-{{newin|[[0.4.0]]|040|type=module}}
+{{newin|[[0.4.0]]}}
 
 Can simulate 2D rigid bodies...
 
-== Types ==
-
 == Functions ==
-```
+Current Retrieval Idea
 
-### Pros
+The current design is moving toward a two-stage process:
 
-* Closest to the author's original documentation
-* Easier to transform into Vim help format
-* Gives control over output
-* Avoids depending on HTML structure
-
-Decision:
-
-Use wikitext as the initial source format.
-
----
-
-# Initial Data Flow
-
-```
 User
  |
  | :VimDoc love.physics
  |
  v
-Plugin checks local cache
+Search documentation source
+ |
+ | REST API
+ |
+ v
+Find matching page
  |
  |
- +---- Documentation exists
- |          |
- |          v
- |     Generate/open Vim help
+ v
+Retrieve page contents
  |
+ | Action API
  |
- +---- Missing
-            |
-            v
-      MediaWiki API
-            |
-            v
-        Wikitext
-            |
-            v
-     Wikitext converter
-            |
-            v
-      Vim help file
-            |
-            v
-        :helptags
-            |
-            v
-       :help love.physics
-```
+ v
+Wikitext
+ |
+ v
+Convert to Vim help format
+ |
+ v
+Generated :help page
+Current Challenges
+Cloudflare Protection
 
----
+While testing API requests through curl, the LÖVE wiki Cloudflare protection blocks requests before they reach MediaWiki.
 
-# Local Cache Idea
+Observed:
 
-Documentation should not be downloaded every time.
+HTTP/2 403
+server: cloudflare
+content-type: text/html
 
-Possible cache location:
+This means:
 
-```
-~/.local/share/vimdoc/
-```
-
-Example:
-
-```
-~/.local/share/vimdoc/
-└── love2d/
-    ├── love.physics.wiki
-    ├── love.physics.newBody.wiki
-    └── generated/
-        └── love2d.txt
-```
-
----
-
-# Vim Help Format
-
-The generated documentation should follow normal Vim help conventions.
-
-Example:
-
-```
-==============================================================================
-love.physics                                      *love.physics*
-
-Can simulate 2D rigid bodies in a realistic manner.
-
-
-FUNCTIONS ~
-
-love.physics.newBody()                            *love.physics.newBody*
-
-Creates a new body.
-```
-
-Important parts:
-
-* Header lines using `=`
-* Help tags using `*tagname*`
-* Sections using uppercase headings
-
----
-
-# Initial Wikitext Conversion Scope
-
-Do NOT attempt to support all MediaWiki syntax initially.
-
-Start with:
-
-| MediaWiki            | Vim Help           |
-| -------------------- | ------------------ |
-| `== Heading ==`      | section            |
-| `=== Subheading ===` | subsection         |
-| normal paragraphs    | normal text        |
-| `[[Link]]`           | help tag/reference |
-| lists                | lists              |
-
-Ignore initially:
-
-* Images
-* Complex tables
-* Templates
-* Semantic MediaWiki queries
-* Dynamic generated sections
-
----
-
-# Current Problem Discovered
-
-The LÖVE wiki uses Semantic MediaWiki.
-
-Example:
-
-```
-{{#ask:
- [[Category:Functions]]
- [[parent::love.physics]]
-}}
-```
-
-These queries generate the function/type tables.
-
-The raw wikitext does not contain the final generated content.
+Lua request handling works
+curl integration works
+API URL construction works
+Cloudflare blocks automated access
 
 Possible future solutions:
 
-1. Use Parse API for those sections
-2. Query Semantic MediaWiki directly
-3. Support only normal pages initially
-4. Combine raw + API-generated data
+Use another documentation source
+Support GitHub-hosted documentation
+Support static documentation sources
+Add configurable documentation backends
+Development Environment
 
-For MVP, ignore this problem.
+A separate Nix development environment was created for plugin testing.
 
----
+Purpose:
 
-# Tree-sitter / Parsers Notes
+Avoid testing inside the main Home Manager-managed Neovim configuration.
 
-Investigated:
+Workflow:
 
-```
-tree-sitter-vimdoc
-```
+Edit plugin source
+        |
+        v
+Switch to test tmux session
+        |
+        v
+Launch development Neovim
+        |
+        v
+Test plugin changes
 
-Important distinction:
+The development environment loads the plugin directly from the repository runtime path.
 
-A parser reads a format and creates a structured representation.
+Local Cache Idea
+
+Documentation should not be downloaded every time.
+
+Possible cache:
+
+~/.local/share/vimdoc/
 
 Example:
 
-```
-Vim help text
-      |
-      v
-syntax tree
-```
+vimdoc/
+└── love2d/
+    ├── pages/
+    └── generated/
+First Milestone
 
-Tree-sitter-vimdoc is useful for analyzing existing Vim help files.
-
-It is probably not required for the first version.
-
----
-
-# AI Usage Plan
-
-AI should be used as a development assistant, not as a replacement for understanding.
-
-Good uses:
-
-* Explain unfamiliar formats
-* Help design architecture
-* Generate small parser functions
-* Create test cases
-* Debug conversion problems
-
-Avoid:
-
-* Generating the entire plugin at once
-* Building a large system before understanding the pieces
-
----
-
-# First Milestone (Vertical Slice)
-
-The first successful version should do only this:
+The first successful version should:
 
 Input:
 
-```
 love.physics
-```
 
 Output:
 
-```
-love2d.txt
-```
+Generated Vim help file
 
 Usage:
 
-```
 :help love.physics
-```
 
 No:
 
-* fuzzy search
-* multiple libraries
-* automatic indexing
-* fancy UI
-
-Just:
-
-```
-Fetch one page → Convert → Open in Vim help
-```
-
----
-
-# Current Decision Summary
-
-Documentation source:
-✅ MediaWiki revisions API
-
-Format:
-✅ Raw wikitext
-
-Target:
-✅ Vim help format
-
-First library:
-✅ LÖVE 2D
+fuzzy searching
+multiple documentation sources
+automatic indexing
+advanced UI
 
 First goal:
-✅ Generate one working `:help` page
+
+Find page → Fetch content → Convert → Open in Vim help
