@@ -1,4 +1,4 @@
- VimDoc Plugin — Design Notes
+ # VimDoc Plugin — Design Notes
 
 ## Project Goal
 
@@ -12,71 +12,74 @@ Example goal:
 
 ```vim
 :help love.physics
+```
 
 should eventually open generated documentation for the LÖVE 2D library.
 
-Current Architecture
+## Current Architecture
 
 The plugin is designed around separating documentation sources, fetching, and rendering.
 
 Current structure:
 
+```
 vimdoc
 ├── plugin/
 │   └── vimdoc.lua
 ├── lua/
 │   └── vimdoc/
 │       ├── init.lua
-│       ├── renderer.lua
+│       ├── core/
 │       └── sources/
 └── flake.nix
-Core
+```
+### Core
 
 The core plugin handles:
 
-User commands
-Documentation queries
-Source lookup
-Passing documentation to renderers
+- User commands
+- Documentation queries
+- Source lookup
+- Passing documentation to renderers
 
 Example:
-
+```vim
 :VimDoc hump.timer
+````
 
 The query is split into:
-
+```
 source.page
-
+```
 Example:
-
+```
 hump.timer
 
-source:
-hump
+source = hump
 
-page:
-timer
-
+page = timer
+```
 The source configuration determines how the documentation should be retrieved.
 
-Documentation Sources
+### Documentation Sources
 
 Sources define where documentation comes from.
 
 A source contains:
 
-Documentation location
-Fetching method
-Documentation format
+- Documentation location
+- Fetching method
+- Documentation format
 
 Examples:
 
-GitHub-hosted documentation
-MediaWiki documentation
-Future static documentation sources
+- GitHub-hosted documentation
+- MediaWiki documentation
+- Future static documentation sources
 
 Example configuration idea:
 
+```vim
 vimdoc.setup({
     sources = {
         hump = {
@@ -87,7 +90,8 @@ vimdoc.setup({
         }
     }
 })
-Fetchers
+```
+#### Fetchers
 
 Fetchers are responsible for retrieving raw documentation.
 
@@ -95,47 +99,25 @@ The fetcher receives information from the source configuration and returns docum
 
 Example workflow:
 
-vimdoc hump.timer
+vimdoc hump.timer -> Source lookup -> GitHub fetcher -> Generate raw GitHub URL -> Fetch documentation file -> Return raw documentation text
 
-        |
-        v
 
-Source lookup
+### Current Supported Source
 
-        |
-        v
-
-GitHub fetcher
-
-        |
-        v
-
-Generate raw GitHub URL
-
-        |
-        v
-
-Fetch documentation file
-
-        |
-        v
-
-Return raw documentation text
-Current Supported Source
-GitHub Documentation Source
+#### GitHub Documentation Source
 
 The current implementation supports fetching documentation from GitHub-hosted files.
 
 Example:
 
 Repository:
-
+```
 VRLD/HUMP
-
+```
 Documentation:
-
+```
 docs/timer.rst
-
+```
 Workflow:
 
 vimdoc hump.timer
@@ -160,19 +142,19 @@ Renderer
 
 Neovim documentation buffer
 
-Currently supported formats:
+### Currently supported formats:
 
-RST
-Markdown
-Renderer
+- RST
+- Markdown
+- Renderer
 
 The renderer converts fetched documentation into a Neovim buffer.
 
 Current functionality:
 
-Creates a scratch buffer
-Assigns a documentation buffer name
-Adds Vim help-style headers and tags
+- Creates a scratch buffer
+- Assigns a documentation buffer name
+- Adds Vim help-style headers and tags
 
 Example generated header:
 
@@ -279,16 +261,16 @@ Retrieving wikitext
 Querying metadata
 
 Example:
-
+```
 action=query
 prop=revisions
 rvprop=content
 titles=love.physics
-
+``` 
 Possible returned data:
-
+```
 {{newin|[[0.4.0]]}}
-
+``` 
 Can simulate 2D rigid bodies...
 
 == Functions ==
