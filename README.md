@@ -8,7 +8,7 @@ Instead of switching between Neovim and a browser, users should eventually be ab
 
 ```vim
 :help library.function
-
+```
 and access documentation directly inside Vim.
 
 Goals
@@ -64,9 +64,9 @@ Vim help-style headers and tags
 Example
 
 Current workflow:
-
+```vim
 :VimDoc hump.timer
-
+```
 Fetches:
 
 VRLD/HUMP
