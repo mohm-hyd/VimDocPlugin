@@ -1,6 +1,7 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
 
 require("vimdoc").setup({
+    output_dir = "./doc",
     sources = {
         hump = {
             fetcher = "github",

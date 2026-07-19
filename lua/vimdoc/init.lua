@@ -12,6 +12,10 @@ function M.setup(opts)
     )
 end
 
+function M.update()
+    vim.cmd("helptags" .. vim.fn.fnameescape(M.config.output_dir))
+end
+
 function M.open(query)
     print("Getting the docs for:", query)
     local source_name, page = query:match("^([^.]+)%.(.+)$")
@@ -20,9 +24,12 @@ function M.open(query)
         print("Unknown source: " .. source_name)
         return
     end
-    local fetcher = require("vimdoc.source." .. source_config.fetcher)
-    local docs = fetcher.fetch(source_config, page)
-    require("vimdoc.core.renderer").render(docs,source_config.format,query)
+    local tag = query
+    local source = require("vimdoc.source." .. source_config.fetcher)
+    local raw = source.fetch(source_config, page)
+    local rendered = require("vimdoc.core.render").render(raw, source_config.format, tag)
+    require("vimdoc.core.writer").write(M.config.output_dir.."/" .. tag .. ".txt",rendered)
+    M.update()
 end
 
 return M
