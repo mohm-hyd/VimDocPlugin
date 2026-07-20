@@ -1,9 +1,14 @@
+local vimdoc = require("vimdoc")
+
 vim.api.nvim_create_user_command(
     "Vimdoc",
     function(opts)
-        require("vimdoc").open(opts.args)
+        vimdoc.open({
+            source = opts.fargs[1],
+            page = opts.fargs[2],
+        })
     end,
     {
-        nargs = 1,
+        nargs = "+",
     }
 )
