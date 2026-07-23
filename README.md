@@ -1,4 +1,4 @@
-# VimDoc
+ VimDoc
 
 A Neovim plugin for accessing external library documentation without leaving the editor.
 

@@ -1,6 +1,6 @@
-local M = {}
+local M   = {}
 
-M.options       = {
+M.options = {
     output_dir = nil,
     sources = {}
 }

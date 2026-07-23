@@ -1,16 +1,15 @@
-local M          = {}
+local M        = {}
 
-local helptags   = require("vimdoc.helptags")
-local config     = require("vimdoc.config")
-local cache      = require("vimdoc.cache")
-local writer     = require("vimdoc.writer")
-local fetchers   = require("vimdoc.fetchers")
-local parsers = require("vimdoc.parsers")
-local renderers  = require("vimdoc.renderers")
+local helptags = require("vimdoc.helptags")
+local config   = require("vimdoc.config")
+local cache    = require("vimdoc.cache")
+local writer   = require("vimdoc.writer")
+local fetchers = require("vimdoc.fetchers")
+local parser   = require("vimdoc.parser")
+local renderer = require("vimdoc.render")
 
 
 function M.open(request)
-
     print("Getting the docs for:", request.page)
     local source = config.options.sources[request.source]
 
@@ -36,10 +35,10 @@ function M.open(request)
     doc.raw = fetchers[doc.source.fetcher].fetch(doc)
     assert(doc.raw, "Fetcher returned no data")
 
-    doc.content = parsers[doc.source.config.format].parse(doc.raw)
+    doc.content = parser.parse(doc)
     assert(doc.content, "Parser returned no content")
 
-    doc.output = renderers[doc.source.config.format].render(doc)
+    doc.output = renderer.render(doc)
     writer.write(path, doc.output)
 
     helptags.update()

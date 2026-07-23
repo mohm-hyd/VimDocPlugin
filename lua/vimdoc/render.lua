@@ -21,6 +21,12 @@ function M.render(doc)
         elseif block.type == "code" then
             table.insert(output, block.text)
             table.insert(output, "")
+        elseif block.type == "list" then
+            for _, item in ipairs(block.items) do
+                table.insert(output, "*" ..item)
+            end
+
+            table.insert(output, "")
         end
     end
     return table.concat(output, "\n")

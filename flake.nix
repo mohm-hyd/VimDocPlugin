@@ -14,10 +14,19 @@
           pkgs.neovim
           pkgs.git
           pkgs.curl
+          pkgs.tree-sitter
         ];
         shellHook = ''
           echo "Vimdoc testing environment"
-          echo "Test env: nvim -u init.lua ."
+          echo "Test env: nvim -u dev/init.lua ."
+          vd() {
+                if [ $# -eq 0 ]; then
+                    nvim -u dev/init.lua
+                else
+                    nvim -u dev/init.lua "+Vimdoc $*"
+                fi
+          }
+          alias cl='./dev/clean'
         '';
       };
 
@@ -33,10 +42,8 @@
             cd $src
 
             nvim --headless \
-                -u tests/init.lua \
-                -i NONE \
-                -c "lua dofile('tests/run.lua')" \
-                -c "qa"
+                -u dev/init.lua \
+                -l tests/adapter/rst_spec.lua \
             touch $out
           '';
     };

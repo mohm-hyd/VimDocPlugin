@@ -1,8 +1,8 @@
 local M = {}
 
 local function genUrl(source, page)
-    return "https://raw.githubusercontent.com/" .. source.config.repo ..
-        "/refs/heads/" .. source.config.branch .. "/" .. source.config.docs .. "/" .. page .. source.config.extension
+    return "https://raw.githubusercontent.com/" .. source.repo ..
+        "/refs/heads/" .. source.branch .. "/" .. source.doc_path .. "/" .. page .. source.extension
 end
 
 function M.fetch(doc)

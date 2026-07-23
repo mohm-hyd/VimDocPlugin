@@ -17,7 +17,7 @@ function M.genUrl(source, title)
     end
 
     local parameters = table.concat(query, "&")
-    return source.config.project_url .. source.config.endpoint .."?".. parameters
+    return source.project_url .. source.endpoint .."?".. parameters
 end
 
 function M.fetch(doc)
